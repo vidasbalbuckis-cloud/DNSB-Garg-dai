@@ -751,7 +751,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <div class="head">
     <select id="filter"><option value="">Visos gyvenvietės</option></select>
     <select id="base"></select>
-    <label><input type="checkbox" id="greyChk" checked> Kiti namai pilkai</label>
+    <label><input type="checkbox" id="greyChk"> Kiti namai pilkai</label>
     <button class="ibtn" id="fitAll" style="width:auto;padding:0 10px;font-size:13px;height:34px">Visas rajonas</button>
   </div>
   <div id="list"></div>
@@ -780,7 +780,7 @@ const isLocal = location.protocol === 'file:';
 const BASES = {
   'OpenStreetMap': isLocal
     ? L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',{maxZoom:19,subdomains:'abc',attribution:OSM_ATTR+', HOT'})
-    : L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:OSM_ATTR}),
+    : L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:OSM_ATTR,referrerPolicy:'strict-origin-when-cross-origin'}),
   'Palydovas': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'&copy; Esri'}),
   'Esri gatvės': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'&copy; Esri'})
 };
@@ -866,7 +866,7 @@ const legend=L.control({position:'bottomright'});
 legend.onAdd=()=>{const el=L.DomUtil.create('div','legend');
   el.innerHTML='<div><i style="background:#f07c00;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #b35500"></i>DNSB / GNSB / GNEB</div>'+
     '<div><i style="background:#f07c00;border:1px solid #b35500"></i>Bendrijos namas</div>'+
-    '<div><i style="background:#b4b7bb;border:1px solid #7d8186"></i>Kiti namai</div>';return el};
+    '';return el};
 legend.addTo(map);
 
 // ---- Start view: Gargždai ----

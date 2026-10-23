@@ -750,6 +750,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <div id="drawer">
   <div class="head">
     <select id="filter"><option value="">Visos gyvenvietės</option></select>
+    <select id="byEmail" style="max-width:100%"><option value="">Visi pirmininkai (el. paštas)</option></select>
     <select id="base"></select>
     <label><input type="checkbox" id="greyChk"> Kiti namai pilkai</label>
     <button class="ibtn" id="fitAll" style="width:auto;padding:0 10px;font-size:13px;height:34px">Visas rajonas</button>
@@ -811,7 +812,9 @@ function houseNo(adr){ const m=adr.match(/g\.\s*([0-9]+[A-Za-z]?)/); return m?m[
 function popup(d){
   const mail = d.email ? `<a href="mailto:${esc(d.email)}">${esc(d.email)}</a>` : '<i>el. paštas nenurodytas</i>';
   const note = d.how==='exact' ? '' : '<div class="n">Vieta apytikslė (tik gatvė).</div>';
-  return `<div class="pop"><h3>${esc(d.name)}</h3><div class="a">${esc(d.adr)}, ${esc(d.sen)}</div>Pirmininkas / kontaktas:<br>${mail}${note}</div>`;
+  const same = d.email ? DATA.filter(x=>x.email===d.email).length : 0;
+  const only = same>1 ? `<div style="margin-top:8px"><a href="#" onclick="pickEmail('${esc(d.email)}');return false;">Rodyti tik šio pirmininko namus (${same})</a></div>` : '';
+  return `<div class="pop"><h3>${esc(d.name)}</h3><div class="a">${esc(d.adr)}, ${esc(d.sen)}</div>Pirmininkas / kontaktas:<br>${mail}${only}${note}</div>`;
 }
 function badgeIcon(d, z){
   const big = z>=16, size = big?46:(z>=14?34:22);
@@ -839,17 +842,33 @@ function row(d){
   return el;
 }
 function applyFilter(){
-  const s=fSel.value; let n=0; listEl.innerHTML='';
+  const s=fSel.value, em=eSel.value; let n=0; listEl.innerHTML='';
   DATA.forEach(d=>{
-    const vis=!s||d.sen===s; d.visible=vis;
+    const vis=(!s||d.sen===s)&&(!em||(em==='-'?!d.email:d.email===em)); d.visible=vis;
     [d.mk,d.pg].forEach(l=>{ if(!l) return; if(vis&&!map.hasLayer(l)) l.addTo(map); if(!vis&&map.hasLayer(l)) map.removeLayer(l); });
     if(vis){ n++; listEl.appendChild(row(d)); }
   });
   document.getElementById('count').textContent = n+' bendrijos';
   return DATA.filter(d=>d.visible);
 }
+const eSel=document.getElementById('byEmail');
+(function(){ const cnt={}; DATA.forEach(d=>{const k=d.email||'-'; cnt[k]=(cnt[k]||0)+1;});
+  Object.keys(cnt).filter(k=>k!=='-').sort((a,b)=>cnt[b]-cnt[a]||a.localeCompare(b)).forEach(k=>{
+    const o=document.createElement('option'); o.value=k; o.textContent=k+' ('+cnt[k]+')'; eSel.appendChild(o); });
+  if(cnt['-']){ const o=document.createElement('option'); o.value='-'; o.textContent='El. paštas nenurodytas ('+cnt['-']+')'; eSel.appendChild(o); }
+})();
+function showFiltered(){ const v=applyFilter(); if(v.length) map.fitBounds(L.latLngBounds(v.map(d=>[d.lat,d.lon])).pad(0.2),{maxZoom:17}); restyle(); updateChip(); }
+eSel.onchange=showFiltered;
+window.pickEmail=function(em){ map.closePopup(); fSel.value=''; eSel.value=em; showFiltered(); };
+// Small chip under the title showing the active chairman filter, with a reset button
+const chip=document.createElement('div'); chip.id='chip';
+chip.style.cssText='position:fixed;top:68px;left:50%;transform:translateX(-50%);z-index:999;background:#f07c00;color:#fff;border-radius:999px;padding:6px 8px 6px 14px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,.25);display:none;align-items:center;gap:8px;max-width:calc(100% - 16px)';
+document.body.appendChild(chip);
+function updateChip(){ const em=eSel.value; if(!em){chip.style.display='none';return;}
+  chip.innerHTML='<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Pirmininkas: <b>'+esc(em==='-'?'el. paštas nenurodytas':em)+'</b></span><button style="border:0;background:#fff;color:#b35500;border-radius:999px;width:24px;height:24px;cursor:pointer;font-weight:700" title="Rodyti visus">✕</button>';
+  chip.style.display='flex'; chip.querySelector('button').onclick=()=>{eSel.value=''; showFiltered();}; }
 fSel.onchange=()=>{ const v=applyFilter(); if(v.length) map.fitBounds(L.latLngBounds(v.map(d=>[d.lat,d.lon])).pad(0.2),{maxZoom:17}); restyle(); };
-document.getElementById('fitAll').onclick=()=>{ fSel.value=''; applyFilter(); map.fitBounds(L.latLngBounds(DATA.map(d=>[d.lat,d.lon])).pad(0.05)); drawer.classList.remove('open'); };
+document.getElementById('fitAll').onclick=()=>{ fSel.value=''; eSel.value=''; updateChip(); applyFilter(); map.fitBounds(L.latLngBounds(DATA.map(d=>[d.lat,d.lon])).pad(0.05)); drawer.classList.remove('open'); };
 
 // ---- Search ----
 const sb=document.getElementById('searchBox'), qi=document.getElementById('q'), res=document.getElementById('results');
